@@ -41,13 +41,20 @@ const (
 
 var (
 	// SPIRE PQC
-	hybridDir    = "/home/byron/spire/hybrid"           //TODO: ENV VAR!!!! // Base directory for hybrid PoC files
-	keysDir      = filepath.Join(hybridDir, "keys")
-	csrDir       = filepath.Join(hybridDir, "csr")
-	certsDir     = filepath.Join(hybridDir, "certs")
-	configFile   = filepath.Join(hybridDir, "openssl.cnf") // OpenSSL config file for hybrid setup
-	caCertFile   = filepath.Join(hybridDir, "ca_cert.pem")      // CA certificate for signing
-	caKeyFile    = filepath.Join(hybridDir, "ca_key.pem")      // CA private key
+	hybridDir   = func() string {
+		dir := os.Getenv("MODIFIED_SPIRE")
+		if dir == "" {
+			panic("Environment variable MODIFIED_SPIRE is not set")
+		}
+		return dir + "/hybrid"
+	}()
+	signAlg		= os.Getenv("SIGN_ALG")
+	keysDir		= filepath.Join(hybridDir, "keys")
+	csrDir		= filepath.Join(hybridDir, "csr")
+	certsDir	= filepath.Join(hybridDir, "certs")
+	configFile	= filepath.Join(hybridDir, "openssl.cnf")	// OpenSSL config file for hybrid setup
+	caCertFile	= filepath.Join(hybridDir, "ca_cert.pem")	// CA certificate for signing
+	caKeyFile	= filepath.Join(hybridDir, "ca_key.pem")	// CA private key
 )
 
 // ServerCA is an interface for Server CAs
@@ -354,7 +361,7 @@ func (ca *CA) GenWorkloadPQX509SVID(ctx context.Context, spiffeID string) (strin
 
 	// Generate a private key for the workload
 	keyFile := filepath.Join(keysDir, fmt.Sprintf("%s_key.pem", filenameSafeID))
-	err := oqsopenssl.GeneratePrivateKey("p384_dilithium3", keyFile)
+	err := oqsopenssl.GeneratePrivateKey(signAlg, keyFile)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate private key: %w", err)
 	}
@@ -364,7 +371,7 @@ func (ca *CA) GenWorkloadPQX509SVID(ctx context.Context, spiffeID string) (strin
 	subj := fmt.Sprintf("/C=US/ST=California/L=Mountain-View/O=Example-Corp/CN=%s", filenameSafeID)
 
 	// TODO: ALLOW TO USE DIFFERENT ALGORITHMS (CAN ALSO BE ENV VAR)
-	err = oqsopenssl.GenerateCSR("p384_dilithium3", keyFile, csrFile, subj, spiffeID, configFile)
+	err = oqsopenssl.GenerateCSR(signAlg, keyFile, csrFile, subj, spiffeID, configFile)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate CSR: %w", err)
 	}

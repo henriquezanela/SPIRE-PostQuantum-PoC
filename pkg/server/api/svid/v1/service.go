@@ -30,7 +30,13 @@ import (
 
 var (
 	// SPIRE PQC
-	hybridDir    = "/home/byron/spire/hybrid"           // MUST BE ADJUSTED!!!! TODO: USE ENV VAR!!! Base directory for hybrid PoC files 
+	hybridDir   = func() string {
+		dir := os.Getenv("MODIFIED_SPIRE")
+		if dir == "" {
+			panic("Environment variable MODIFIED_SPIRE is not set")
+		}
+		return dir + "/hybrid"
+	}()
 	keysDir      = filepath.Join(hybridDir, "keys")
 	csrDir       = filepath.Join(hybridDir, "csr")
 	certsDir     = filepath.Join(hybridDir, "certs")
